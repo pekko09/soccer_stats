@@ -1,0 +1,12 @@
+ToDos ics Kalendar Datei
+
+[-] Spielort via dict anlegen
+[ ] Datumformat anpassen
+[x] Modularisieren
+[x] CL hinzufügen
+[x] DFB-Pokal hinzufügen
+[ ] in ics Datei umbauen
+[ ] Repo auf github
+[ ] GitHub Pages und Actions zur Aktualisierung
+[ ] Trigger zur Aktualisierung überlegen (zeitlich? eventbasiert?)
+[ ] Spieldatenbank mit Aufstellung ergänzen
