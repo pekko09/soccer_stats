@@ -139,7 +139,7 @@ class MatchFixtures(APIClient):
             cal.events.add(event)
 
         #Write calendar file
-        with open("public/bvb_fixtures.ics", "w", encoding="utf-8") as f:
+        with open("docs/bvb_fixtures.ics", "w", encoding="utf-8") as f:
             f.writelines(cal.serialize_iter())
 
 
