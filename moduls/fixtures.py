@@ -1,23 +1,49 @@
 import requests as rq
+from ics import Calendar, Event
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
-class MatchFixtures:
-    """A model to get all matches of a team id from openligadb API """
+class APIClient:
+    """Base class for API requests"""
 
-    def __init__(self, teamshort, year_season):
-        self.teamshort = teamshort
-        self.team_name = ''
-        self.year_season = year_season
-        self.teamid = self.get_teamid()
-        self.matches = []
+    API_CONFIG = {
+        'oldb': {
+            'base_url': 'https://api.openligadb.de',
+            'auth_type': 'none'
+        },
+        'kb': {
+            'base_url': 'https://api.kickbase.com/v4',
+            'auth_type': 'bearer' #?
+        }
+        }
     
-    def query_api(self, ep):
-        """Method to query data from API of openligadb"""
+    def _build_headers(self):
+        """Create headers for API requests based on authentification type"""
+        if self.auth_type == "bearer" and self.credential:
+            return {"Authorization": f"Bearer {self.credential}"}
+        elif self.auth_type == "apikey" and self.credential:
+            return {"X-API-Key": self.credential}
+        else:
+            return {}  # no authentification
+        
+    def query_api(self, ep: str, api_choice: str = 'oldb', params: dict | None = None):
+        """Method to query data from an API listed in dict API_CONFIG"""
+        #Check input of api_choice
+        if api_choice not in self.API_CONFIG:
+            raise ValueError(f"Invalid base url selection '{api_choice}'. Choose one of: {list(self.API_CONFIG)}")
+        
+        #Set base url
+        self.base_url = self.API_CONFIG[api_choice]['base_url']
+        
+        #Set auth type
+        self.auth_type = self.API_CONFIG[api_choice]['auth_type']  
+        #Create api url with endpoint
+        api_url = f"{self.base_url}{ep}"
 
-        api_main = 'https://api.openligadb.de'
-        api_url = f"{api_main}{ep}"
         try:
             #start query timeout 3s connect, 10s response max time
-            resp = rq.get(url=api_url, timeout=(3,10))
+            headers = self._build_headers()
+            resp = rq.get(url=api_url, headers=headers, params=params, timeout=(3,10))
             resp.raise_for_status()
             return resp.json()
         except rq.exceptions.HTTPError as e:
@@ -26,6 +52,20 @@ class MatchFixtures:
         except rq.exceptions.RequestException as e:
             print("Allgemeiner Request-Fehler:", e)
             return []
+
+
+class MatchFixtures(APIClient):
+    """A model to get all matches of a team id from openligadb API """
+
+    #Define competition labels
+    COMP_NAMES = {'bl1': 'BL', 'ucl': 'CL', 'dfb': 'DFB-Pokal', 'uel': 'EL'}
+
+    def __init__(self, teamshort: str, year_season: int):
+        self.teamshort = teamshort
+        self.team_name = ''
+        self.year_season = year_season
+        self.teamid = self.get_teamid()
+        self.matches = []
 
     def get_teamid(self):
         """Method to get teamID from team short name"""
@@ -52,15 +92,12 @@ class MatchFixtures:
         #Get teamId
         return team['teamId']
         
-    def get_matches(self, comp):
+    def get_matches(self, comp: str):
         """Method to call all matches of a team in a competition, given by comp"""
         
         #Check input
-        if comp not in {'bl1', 'ucl', 'dfb', 'uel'}:
-            raise ValueError(f"Invalid input for parameter comp: {comp}. Please chose one of 'bl1', 'ucl', 'dfb' or 'uel'")
-
-        #Define competition labels
-        comp_labels = {'bl1': 'BL', 'ucl': 'CL', 'dfb': 'DFB', 'uel': 'EL'}
+        if comp not in self.COMP_NAMES:
+            raise ValueError(f"Invalid input for parameter comp: {comp}. Please chose one of: {list(self.COMP_NAMES)}")
 
         #Count items in list matches
         len_old = len(self.matches)
@@ -77,9 +114,34 @@ class MatchFixtures:
             self.matches.sort(key=lambda x: x['matchDateTime'])
             #Calculate new matches added
             len_new = len(self.matches) - len_old
-            print(f"{len_new} new matches found for team {self.team_name} in campaign {comp_labels[comp]}")
+            print(f"{len_new} new matches found for team {self.team_name} in campaign {self.COMP_NAMES[comp]}")
         else:
-            print(f"0 new matches found for team {self.team_name} in campaign {comp_labels[comp]}") 
+            print(f"0 new matches found for team {self.team_name} in campaign {self.COMP_NAMES[comp]}")
+    
+    def make_ics(self):
+        #create calendar
+        cal = Calendar()
+
+        #Create events
+        for match in self.matches:
+            comp = self.COMP_NAMES[match['leagueShortcut']]
+            home = match['team1']['teamName']
+            away = match['team2']['teamName']
+            start_date_utc = datetime.strptime(match['matchDateTimeUTC'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=ZoneInfo("UTC"))
+            start_date_local = start_date_utc.astimezone(ZoneInfo("Europe/Berlin"))
+            counter = f"Match {match['group']['groupOrderID']}:"
+
+            event = Event()
+            event.name = f"{comp} {counter} {home} - {away}"
+            event.begin = start_date_local
+            event.end = start_date_local + timedelta(minutes=90)
+
+            cal.events.add(event)
+
+        #Write calendar file
+        with open("public/bvb_fixtures.ics", "w", encoding="utf-8") as f:
+            f.writelines(cal.serialize_iter())
+
 
 
                     
