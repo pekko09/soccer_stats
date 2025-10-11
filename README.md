@@ -88,7 +88,8 @@ classDiagram
     }
 
     APIClient <|-- MatchFixtures : inheritance
-``
+``` 
+
 
 ## Notes:
 - **`APIClient`** handles API endpoints, headers, and authentication logic.  
