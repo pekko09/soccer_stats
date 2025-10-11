@@ -1,0 +1,60 @@
+name: Update ics calendar 
+# set cron for every Monday and Friday at 6pm 
+on: 
+  schedule:
+    - cron: '0 18 * * 1,5'
+  workflow_dispatch: {}
+# Add permission to write in repo
+permissions:
+  contents: write
+
+jobs:
+  update-ics:
+    runs-on: ubuntu-latest
+    
+    env:
+      SCRIPT: update_cal.py
+      PATH_CALENDAR: docs/bvb_fixtures.ics
+    
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      
+      - name: set up python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: run update script
+        run: |
+          python "$SCRIPT"
+
+      - name: show changes
+        run: |
+          git status --porcelain
+          git diff -- $PATH_CALENDAR || true
+      
+      - name: commit and push updated version 
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add $PATH_CALENDAR
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto update calendar: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              git push
+            else
+              echo "Skipping push: not on main branch"
+            fi
+          fi
+  
+

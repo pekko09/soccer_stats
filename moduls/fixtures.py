@@ -2,6 +2,7 @@ import requests as rq
 from ics import Calendar, Event
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+import hashlib
 
 class APIClient:
     """Base class for API requests"""
@@ -66,6 +67,7 @@ class MatchFixtures(APIClient):
         self.year_season = year_season
         self.teamid = self.get_teamid()
         self.matches = []
+        self.get_all_matches()
 
     def get_teamid(self):
         """Method to get teamID from team short name"""
@@ -99,8 +101,8 @@ class MatchFixtures(APIClient):
         if comp not in self.COMP_NAMES:
             raise ValueError(f"Invalid input for parameter comp: {comp}. Please chose one of: {list(self.COMP_NAMES)}")
 
-        #Count items in list matches
-        len_old = len(self.matches)
+        #Init counter for matches
+        match_counter = 0
 
         #Request data
         apiep = f"/getmatchdata/{comp}/{self.year_season}"
@@ -110,15 +112,24 @@ class MatchFixtures(APIClient):
             for match in leaguefixtures:
                 if match["team1"]["teamId"] == self.teamid or match["team2"]["teamId"] == self.teamid:
                     self.matches.append(match)
+                    match_counter += 1
             #Sort matches by date
             self.matches.sort(key=lambda x: x['matchDateTime'])
             #Calculate new matches added
-            len_new = len(self.matches) - len_old
-            print(f"{len_new} new matches found for team {self.team_name} in campaign {self.COMP_NAMES[comp]}")
+            print(f"{match_counter} new matches found for team {self.team_name} in campaign {self.COMP_NAMES[comp]}")
         else:
             print(f"0 new matches found for team {self.team_name} in campaign {self.COMP_NAMES[comp]}")
     
+    def get_all_matches(self):
+        """Method to get all matches of all running competitions"""
+
+        # Define competitions
+        for c in self.COMP_NAMES:
+            self.get_matches(comp=c)
+    
+    
     def make_ics(self):
+        """Method to create a ics calendar in github pages of repo soccer_stats"""
         #create calendar
         cal = Calendar()
 
@@ -131,12 +142,25 @@ class MatchFixtures(APIClient):
             start_date_local = start_date_utc.astimezone(ZoneInfo("Europe/Berlin"))
             counter = f"Match {match['group']['groupOrderID']}:"
 
+            #create deterministic uid
+            uid_str = f"{comp}-{home}-{away}-{counter}"
+            uid_hash = hashlib.md5(uid_str.encode('utf-8')).hexdigest()
+
+            #create deterministic datetimestamp
+            dt_clean = start_date_local.replace(second=0, microsecond=0)
+
             event = Event()
             event.name = f"{comp} {counter} {home} - {away}"
             event.begin = start_date_local
             event.end = start_date_local + timedelta(minutes=90)
+            event.uid = f"{uid_hash}@soccer_stats"
+            event.created = dt_clean
+            event.last_modified = dt_clean
 
             cal.events.add(event)
+        
+        #Sort events
+        cal.events = set(sorted(cal.events, key=lambda e: e.begin))
 
         #Write calendar file
         with open("docs/bvb_fixtures.ics", "w", encoding="utf-8") as f:
