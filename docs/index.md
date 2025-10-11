@@ -23,5 +23,8 @@ This project is a fun development project to experiment with Python, APIs, and G
 [![Build Status](https://github.com/pekko09/soccer_stats/actions/workflows/update_bvb_fixtures.yml/badge.svg)](https://github.com/pekko09/soccer_stats/actions/workflows/update_bvb_fixtures.yml)
 
 
+## ReadMe
+
+{% include_relative ../README.md %}
 
 ---
