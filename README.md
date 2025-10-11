@@ -51,13 +51,6 @@ Additional add-ons and ideas already exist and will be added gradually, **withou
 - Evaluate team statistics
 - Create visualizations on team data
 
-## License
-This project is licensed under the MIT License.
-
-## Contact
-Author: [@pekko09](https://github.com/pekko09)
-
-Feel free to open an issue or discussion for suggestions or questions.
 
 ## Class Diagram
 
@@ -97,3 +90,12 @@ classDiagram
   - Retrieve teams and match data from OpenLigaDB  
   - Store, sort, and manage fixture lists  
   - Export events as `.ics` calendar files for GitHub Pages 
+
+
+## License
+This project is licensed under the MIT License.
+
+## Contact
+Author: [@pekko09](https://github.com/pekko09)
+
+Feel free to open an issue or discussion for suggestions or questions.
