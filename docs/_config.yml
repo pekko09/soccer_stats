@@ -1,0 +1,4 @@
+title: Soccer Statistics
+description: Fun project to play around with Python, APIs, GitHubActions
+theme: minima
+baseurl: "/soccer_stats"    
