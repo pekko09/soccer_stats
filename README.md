@@ -56,6 +56,7 @@ This project is licensed under the MIT License.
 
 ## Contact
 Author: [@pekko09](https://github.com/pekko09)
+
 Feel free to open an issue or discussion for suggestions or questions.
 
 ## Class Diagram
@@ -88,7 +89,7 @@ classDiagram
 
     APIClient <|-- MatchFixtures : inheritance
 
-### Notes:
+## Notes:
 - **`APIClient`** handles API endpoints, headers, and authentication logic.  
 - **`MatchFixtures`** builds on top of it to:
   - Retrieve teams and match data from OpenLigaDB  
